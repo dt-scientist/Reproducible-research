@@ -25,7 +25,8 @@ PROPDMGEXP: Metric prefix.
 CROPDMGEXP: Metric prefix.
 ```
 
-```{r}
+
+```r
 setwd("C:/Users/geo/Documents/DS/Reproducible research")
 
 #only extract the columns we need
@@ -37,12 +38,12 @@ data$BGN_DATE <- strptime(data$BGN_DATE, format="%m/%d/%Y %H:%M:%S" )
 #convert to upper case
 data$PROPDMGEXP<-toupper(data$PROPDMGEXP)
 data$CROPDMGEXP<-toupper(data$CROPDMGEXP)
-
-``` 
+```
 
 **Create a tidy data set** 
 
-```{r}
+
+```r
 data$evtype2<-as.character(data$EVTYPE)
 data$evtype2[grepl("TSTM",data$EVTYPE,ignore.case=TRUE)]<-"TSTM"
 data$evtype2[grepl("FLOOD",data$EVTYPE,ignore.case=TRUE)]<-"FLOOD"
@@ -62,18 +63,53 @@ Fields PROPDMGEXP and CROPDMGEXP contains the unit prefix that precedes the unit
 `H = 100 USD ,K = 1000 USD, M = 1000000 USD, B = 1000000000 USD`
 
 Count unique values in PROPDMGEXP field:
-```{r}
+
+```r
 as.data.frame(table(PROPDMGEXP=data$PROPDMGEXP))
 ```
 
+```
+##    PROPDMGEXP   Freq
+## 1             465934
+## 2           -      1
+## 3           ?      8
+## 4           +      5
+## 5           0    216
+## 6           1     25
+## 7           2     13
+## 8           3      4
+## 9           4      4
+## 10          5     28
+## 11          6      4
+## 12          7      5
+## 13          8      1
+## 14          B     40
+## 15          H      7
+## 16          K 424665
+## 17          M  11337
+```
+
 Count unique values in CROPDMGEXP field:
-```{r}
+
+```r
 as.data.frame(table(CROPDMGEXP=data$CROPDMGEXP))
+```
+
+```
+##   CROPDMGEXP   Freq
+## 1            618413
+## 2          ?      7
+## 3          0     19
+## 4          2      1
+## 5          B      9
+## 6          K 281853
+## 7          M   1995
 ```
 
 
 Next we will convert PROPDMGEXP and CROPDMGEXP to numeric fields:
-```{r}
+
+```r
 library(car)
 data$PROPDMG2 <- data$PROPDMG * as.numeric(Recode(data$PROPDMGEXP, 
     "'B'=1000000000;'h'=100;'H'=100;'K'=1000;'m'=1000000;'M'=1000000;'-'=0;'?'=0;'+'=0", 
@@ -89,7 +125,8 @@ data$totalDamage<-data$PROPDMG2+data$CROPDMG2
 **Take Subset of data**
 
 Because fewer events were recorded in earlier years, this analysis will focus on only the most recent 10 years.
-```{r}
+
+```r
 chartData <- data[format(data$beginDate,format="%Y") > 2001,]
 ```
 
@@ -97,7 +134,8 @@ chartData <- data[format(data$beginDate,format="%Y") > 2001,]
 
 **Aggregate the Human and Financial damages by Type of Event**
 
-```{r message = FALSE, warnings = FALSE}
+
+```r
 #financial damages
 library(reshape2)
 financialdamage <- aggregate(cbind(PROPDMG2, CROPDMG2) ~ evtype2, chartData, sum)
@@ -111,22 +149,28 @@ human <- melt(head(humandamages[order(-humandamages$FATALITIES, -humandamages$IN
 
 **Most harmful events for population health**
 
-```{r message = FALSE, warnings = FALSE}
+
+```r
 library(ggplot2)
 ggplot(human, aes(x = evtype2, y = value, fill = variable)) + geom_bar(stat = "identity") + 
     coord_flip() + ggtitle("Harmful events population health") + labs(x = "", y = "number of people impacted") + 
     scale_fill_manual(values = c("red", "blue"), labels = c("Fatalities", "Injuries"))
 ```
 
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8.png) 
+
 
 **Most harmful events for the economy**
 
-```{r message = FALSE, warnings = FALSE}
+
+```r
 ggplot(fin, aes(x = evtype2, y = value, fill = variable)) + geom_bar(stat = "identity") + 
     coord_flip() + ggtitle("Harmful events for the economy ") + labs(x = "", y = "cost of damages in dollars") + 
     scale_fill_manual(values =  c("red", "blue"), labels = c("Property Damage", 
         "Crop Damage"))
 ```
+
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9.png) 
 
 **Conclusion**
 
